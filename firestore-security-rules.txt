@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Globals
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'admin@example.com';
+    }
+    
+    // Users collection: Users can only read/write their own data. Admin can access all.
+    match /users/{uid} {
+      allow read, write: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+    }
+
+    // Deposits collection: Users can create their own, read their own. Admin can read/update all.
+    match /deposits/{depositId} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    
+    // Transactions collection: Same as deposits
+    match /transactions/{transactionId} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Scratch Pools collection: 
+    // Usually only server/admin modifies this in a secure system, but in our demo it seems the client uses runTransaction.
+    // For a fully secure app, this should only be modified by Cloud Functions or Admin.
+    match /scratchPools/{poolId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn(); // In production, replace with: `allow write: if isAdmin();` and route payments through a Cloud Function.
+    }
+  }
+}
