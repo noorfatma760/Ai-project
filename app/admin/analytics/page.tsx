@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import Navbar from '../../../components/Navbar'
+import Navbar from '../../../components/Navbar'
 import { ArrowLeft, Users, CreditCard, Gift, Ticket, Activity } from 'lucide-react';
 import Link from 'next/link';
 
