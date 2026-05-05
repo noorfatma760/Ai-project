@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import Navbar from '../../../components/Navbar'
+import Footer from '../../../components/Footer'
 import { Clock, Download, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
