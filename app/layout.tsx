@@ -1,4 +1,10 @@
 import './globals.css';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'App',
+  description: 'Fast Next.js App',
+};
 
 export default function RootLayout({
   children,
@@ -7,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gradient-to-br from-[#070B18] via-[#0B1220] to-[#050816] text-white min-h-screen">
+      <body
+        className="bg-[#0B1220] text-white min-h-screen antialiased"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
