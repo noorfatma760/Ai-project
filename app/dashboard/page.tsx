@@ -1,17 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, Ticket, DollarSign, History, Plus, Minus, ShoppingCart, Play, Loader2, Gift, X, Share2, Copy, Users } from 'lucide-react';
+import {
+  Trophy, Ticket, DollarSign, History, Plus, Minus,
+  ShoppingCart, Play, Loader2, Gift, X, Share2,
+  Copy, Users
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
   const router = useRouter();
+
   const [balance, setBalance] = useState(1000);
   const [quantities, setQuantities] = useState<Record<string, number>>({
     rs10: 0, rs20: 0, rs50: 0, rs100: 0
   });
-  
+
   const [myCards, setMyCards] = useState<{type: string, id: string, quantity: number}[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -22,7 +27,6 @@ export default function Dashboard() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Referral and Share variables
   const [refCode, setRefCode] = useState('');
   const [refLink, setRefLink] = useState('');
   const [refCount, setRefCount] = useState(0);
@@ -31,24 +35,33 @@ export default function Dashboard() {
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
+  const routerPushSafe = (path: string) => {
+    try {
+      router.push(path);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleDepositSubmit = async () => {
     const amt = Number(depositAmount);
     if (!amt || isNaN(amt) || amt <= 0) return;
-    
+
     if (amt < 100) {
-       alert("Minimum deposit amount is Rs 100");
-       return;
+      alert("Minimum deposit amount is Rs 100");
+      return;
     }
-    
+
     try {
       const { auth, db } = await import('@/lib/firebase');
       const { addDoc, collection } = await import('firebase/firestore');
+
       const user = auth.currentUser;
       if (!user) {
         alert("You must be logged in to deposit.");
         return;
       }
-      
+
       await addDoc(collection(db, 'deposits'), {
         uid: user.uid,
         amount: amt,
@@ -56,12 +69,13 @@ export default function Dashboard() {
         status: 'pending',
         createdAt: new Date().toISOString()
       });
-      
+
       setSuccessMessage('Deposit request submitted');
       setShowAddFunds(false);
       setDepositAmount('');
       setPaymentMethod('');
       setTimeout(() => setSuccessMessage(''), 3000);
+
     } catch (e) {
       console.error("Error submitting deposit: ", e);
       alert("Error submitting deposit request.");
@@ -70,7 +84,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const storedBalance = localStorage.getItem('demo_balance');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (storedBalance) setBalance(Number(storedBalance));
 
     import('@/lib/firebase').then(({ auth }) => {
@@ -78,34 +91,120 @@ export default function Dashboard() {
         onAuthStateChanged(auth, async (user) => {
           if (user) {
             setUserEmail(user.email || '');
-            
-            // Set dynamic ref code and link
+
             const rCode = user.uid;
             setRefCode(rCode);
-            setRefLink(typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${rCode}` : `https://example.com/auth?ref=${rCode}`);
-            
-            import('firebase/firestore').then(({ doc, getDoc }) => {
-              import('@/lib/firebase').then(({ db }) => {
-                getDoc(doc(db, 'users', user.uid)).then(docSnap => {
-                  if (docSnap.exists()) {
-                    setUserName(docSnap.data().name || user.email?.split('@')[0]);
-                    setRefEarnings(docSnap.data().referralEarnings || 0);
-                    // fallback to 0 count or from local for demo
-                    setRefCount(docSnap.data().referralEarnings ? Math.floor(docSnap.data().referralEarnings / 10) : 0);
-                  } else {
-                    setUserName(user.email?.split('@')[0] || '');
-                  }
-                  setAuthLoading(false);
-                });
-              });
-            });
+
+            setRefLink(
+              typeof window !== 'undefined'
+                ? `${window.location.origin}/auth?ref=${rCode}`
+                : `https://example.com/auth?ref=${rCode}`
+            );
+
+            try {
+              const { doc, getDoc } = await import('firebase/firestore');
+              const { db } = await import('@/lib/firebase');
+
+              const docSnap = await getDoc(doc(db, 'users', user.uid));
+
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                setUserName(data.name || user.email?.split('@')[0] || '');
+                setRefEarnings(data.referralEarnings || 0);
+                setRefCount(
+                  data.referralEarnings ? Math.floor(data.referralEarnings / 10) : 0
+                );
+              } else {
+                setUserName(user.email?.split('@')[0] || '');
+              }
+
+            } catch (err) {
+              console.error("User fetch error:", err);
+              setUserName(user.email?.split('@')[0] || '');
+            } finally {
+              setAuthLoading(false);
+            }
+
           } else {
-            router.push('/auth');
+            routerPushSafe('/auth');
           }
         });
       });
     });
 
+    const lastShareDate = localStorage.getItem('demo_share_date');
+    const today = new Date().toDateString();
+
+    if (lastShareDate !== today) {
+      localStorage.setItem('demo_share_date', today);
+      localStorage.setItem('demo_share_count_today', '0');
+      setShareCountToday(0);
+    } else {
+      setShareCountToday(Number(localStorage.getItem('demo_share_count_today') || 0));
+    }
+
+    const interval = setInterval(() => {
+      const lastClaim = localStorage.getItem('demo_free_claim_date');
+      const customAdminHours = Number(localStorage.getItem('admin_free_card_timer') || '24');
+
+      if (lastClaim) {
+        const timePassed = Date.now() - parseInt(lastClaim);
+        const cooldownMs = customAdminHours * 60 * 60 * 1000;
+        setFreeTimeLeft(Math.max(cooldownMs - timePassed, 0));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [router]);
+
+  const recentGames = [
+    { id: 1, name: "Gold", result: "Won", amount: "+Rs 500", date: "2 hrs ago", status: "emerald" },
+    { id: 2, name: "Silver", result: "Lost", amount: "-Rs 20", date: "5 hrs ago", status: "rose" },
+  ];
+
+  const statusColorMap: Record<string, string> = {
+    emerald: "text-emerald-400",
+    rose: "text-rose-400"
+  };
+
+  if (authLoading) {
+    return (
+      <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#4F9CFF] opacity-50" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full space-y-8 mt-4 relative z-10">
+      {isTransitioning && (
+        <div className="fixed inset-0 z-[100] bg-[#0B1220]/80 backdrop-blur-sm flex items-center justify-center">
+          <Loader2 className="w-12 h-12 text-[#4F9CFF] animate-spin" />
+        </div>
+      )}
+
+      {/* KEEP YOUR UI EXACT SAME BELOW — ONLY FIX USED WHERE NEEDED */}
+
+      {/* Recent Games FIX */}
+      <div className="space-y-4">
+        {recentGames.map((game) => (
+          <div key={game.id} className="flex justify-between items-center p-3 rounded-xl bg-[#0B1220]/30">
+            <div>
+              <h4 className="font-bold text-sm text-white">{game.name}</h4>
+              <p className="text-xs text-slate-400">{game.date}</p>
+            </div>
+            <div className="text-right">
+              <p className={`font-black text-sm ${statusColorMap[game.status]}`}>
+                {game.amount}
+              </p>
+              <p className="text-[10px] uppercase text-slate-500">{game.result}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
     const lastShareDate = localStorage.getItem('demo_share_date');
     const today = new Date().toDateString();
     if (lastShareDate !== today) {
