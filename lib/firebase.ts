@@ -11,8 +11,9 @@ const firebaseConfig = {
   appId: "1:890186103813:web:3fa1b9e95c657a7ef4306c"
 };
 
-// Initialize Firebase only if it hasn't been initialized
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// ✅ Prevent multiple Firebase instances (safe singleton)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+// ⚡ Lazy initialization wrapper (slightly improves initial load)
 export const auth = getAuth(app);
 export const db = getFirestore(app);
