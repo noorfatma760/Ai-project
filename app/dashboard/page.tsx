@@ -51,7 +51,11 @@ export default function Dashboard() {
 
   // ================= FIREBASE + INIT =================
   useEffect(() => {
-    const init = async () => {
+  const init = async () => {
+
+    console.log("Dashboard loaded"); // 👈 YAHAN
+
+    const storedBalance = localStorage.getItem('demo_balance');
       const storedBalance = localStorage.getItem('demo_balance');
       if (storedBalance) setBalance(Number(storedBalance));
 
