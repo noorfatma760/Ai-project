@@ -61,9 +61,10 @@ export default function Dashboard() {
 
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
-          router.push('/auth');
-          return;
-        }
+  setAuthLoading(false);
+  router.push('/auth');
+  return;
+}
 
         setUserEmail(user.email || '');
         const rCode = user.uid;
