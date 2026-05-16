@@ -55,7 +55,7 @@ export default function Dashboard() {
       const storedBalance = localStorage.getItem('demo_balance');
       if (storedBalance) setBalance(Number(storedBalance));
 
-      const { auth, db } = await import('@/lib/firebase');
+      const { auth, db } = await import('../../lib/firebase');;
       const { onAuthStateChanged } = await import('firebase/auth');
       const { doc, getDoc } = await import('firebase/firestore');
 
