@@ -39,7 +39,7 @@ export default function Dashboard() {
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [refCode, setRefCode] = useState('');
   const [refLink, setRefLink] = useState('');
