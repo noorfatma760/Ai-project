@@ -39,7 +39,7 @@ export default function Dashboard() {
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [refCode, setRefCode] = useState('');
   const [refLink, setRefLink] = useState('');
@@ -74,7 +74,7 @@ export default function Dashboard() {
         const rCode = user.uid;
 
         setRefCode(rCode);
-        setRefLink(`${window.location.origin}/auth?ref=${rCode}`);
+        setRefLink(`${typeof window !== "undefined" ? window.location.origin : ""}/auth?ref=${rCode}`);
 
         const snap = await getDoc(doc(db, 'users', user.uid));
 
