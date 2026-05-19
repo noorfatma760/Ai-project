@@ -50,78 +50,48 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState('');
 
   // ================= FIREBASE + INIT =================
-  useEffect(() => {
+useEffect(() => {
+  let unsub;
+  let interval;
+
   const init = async () => {
-
-    console.log("Dashboard loaded"); // 👈 YAHAN
-
-    const storedBalance = localStorage.getItem('demo_balance');
-      
-      if (storedBalance) setBalance(Number(storedBalance));
-
-      const { auth, db } = await import('../../lib/firebase');;
+    try {
+      const { auth, db } = await import('../../lib/firebase');
       const { onAuthStateChanged } = await import('firebase/auth');
       const { doc, getDoc } = await import('firebase/firestore');
 
-   const unsub = onAuthStateChanged(auth, async (user) => {
-  try {
+      unsub = onAuthStateChanged(auth, async (user) => {
+        try {
+          if (!user) {
+            setAuthLoading(false);
+            router.push('/auth');
+            return;
+          }
 
-    if (!user) {
-      setAuthLoading(false);
-      router.push('/auth');
-      return;
-    }
+          setUserEmail(user.email || '');
+          setUserName(user.email?.split('@')[0] || '');
 
-    setUserEmail(user.email || '');
-    setUserName(user.email?.split('@')[0] || '');
+          const origin =
+            typeof window !== "undefined" ? window.location.origin : "";
 
-    setRefCode(user.uid);
+          setRefCode(user.uid);
+          setRefLink(`${origin}/auth?ref=${user.uid}`);
 
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+          const snap = await getDoc(doc(db, 'users', user.uid));
 
-    setRefLink(`${origin}/auth?ref=${user.uid}`);
+          if (snap.exists()) {
+            const data = snap.data();
+            setUserName(data.name || user.email?.split('@')[0]);
+            setRefEarnings(data.referralEarnings || 0);
+            setRefCount(Math.floor((data.referralEarnings || 0) / 10));
+          }
 
-    const snap = await getDoc(doc(db, 'users', user.uid));
-
-    if (snap.exists()) {
-      const data = snap.data();
-      setUserName(data.name || user.email?.split('@')[0]);
-      setRefEarnings(data.referralEarnings || 0);
-      setRefCount(Math.floor((data.referralEarnings || 0) / 10));
-    }
-
-  } catch (error) {
-    console.log("Auth error:", error);
-  }
-
-  setAuthLoading(false);
-});
-
-      // share logic
-      const lastShareDate = localStorage.getItem('demo_share_date');
-      const today = new Date().toDateString();
-
-      if (lastShareDate !== today) {
-        localStorage.setItem('demo_share_date', today);
-        localStorage.setItem('demo_share_count_today', '0');
-        setShareCountToday(0);
-      } else {
-        setShareCountToday(Number(localStorage.getItem('demo_share_count_today') || 0));
-      }
-
-      // cards load
-      const list = ['rs10', 'rs20', 'rs50', 'rs100', 'free'];
-      const loaded: any[] = [];
-
-      list.forEach((id) => {
-        const q = localStorage.getItem('demo_card_' + id);
-        if (q && Number(q) > 0) {
-          loaded.push({ id, type: id, quantity: Number(q) });
+        } catch (error) {
+          console.log("Auth error:", error);
         }
-      });
 
-      setMyCards(loaded);
+        setAuthLoading(false);
+      });
 
       const checkTimer = () => {
         const last = localStorage.getItem('demo_free_claim_date');
@@ -136,15 +106,21 @@ export default function Dashboard() {
       };
 
       checkTimer();
-      const interval = setInterval(checkTimer, 1000);
+      interval = setInterval(checkTimer, 1000);
 
-      return () => {
-  if (unsub) unsub();
-  clearInterval(interval);
-};
+    } catch (error) {
+      console.log(error);
+      setAuthLoading(false);
+    }
+  };
 
-    init();
-  }, [router]);
+  init();
+
+  return () => {
+    if (unsub) unsub();
+    if (interval) clearInterval(interval);
+  };
+}, [router]);
 
   // ================= RENDER SAFE =================
   if (authLoading) {
