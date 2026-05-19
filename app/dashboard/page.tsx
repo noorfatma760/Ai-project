@@ -51,8 +51,8 @@ export default function Dashboard() {
 
   // ================= FIREBASE + INIT =================
 useEffect(() => {
-  let unsub;
-  let interval;
+  let unsub: any;
+  let interval: any;
 
   const init = async () => {
     try {
