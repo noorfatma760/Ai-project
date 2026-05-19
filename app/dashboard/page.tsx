@@ -70,27 +70,33 @@ useEffect(() => {
 
           setUserEmail(user.email || '');
           setUserName(user.email?.split('@')[0] || '');
-
+          setAuthLoading(false);
           const origin =
             typeof window !== "undefined" ? window.location.origin : "";
 
           setRefCode(user.uid);
           setRefLink(`${origin}/auth?ref=${user.uid}`);
 
-          const snap = await getDoc(doc(db, 'users', user.uid));
+          try {
+  const snap = await getDoc(doc(db, 'users', user.uid));
 
-          if (snap.exists()) {
-            const data = snap.data();
-            setUserName(data.name || user.email?.split('@')[0]);
-            setRefEarnings(data.referralEarnings || 0);
-            setRefCount(Math.floor((data.referralEarnings || 0) / 10));
-          }
+  if (snap.exists()) {
+    const data = snap.data();
+
+    setUserName(data.name || user.email?.split('@')[0] || '');
+    setRefEarnings(data.referralEarnings || 0);
+    setRefCount(Math.floor((data.referralEarnings || 0) / 10));
+  }
+
+} catch (err) {
+  console.log("Firestore failed:", err);
+}
 
         } catch (error) {
           console.log("Auth error:", error);
         }
 
-        setAuthLoading(false);
+        
       });
 
       const checkTimer = () => {
