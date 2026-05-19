@@ -56,7 +56,7 @@ export default function Dashboard() {
     console.log("Dashboard loaded"); // 👈 YAHAN
 
     const storedBalance = localStorage.getItem('demo_balance');
-      const storedBalance = localStorage.getItem('demo_balance');
+      
       if (storedBalance) setBalance(Number(storedBalance));
 
       const { auth, db } = await import('../../lib/firebase');;
