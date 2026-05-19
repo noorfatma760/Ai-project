@@ -63,32 +63,40 @@ export default function Dashboard() {
       const { onAuthStateChanged } = await import('firebase/auth');
       const { doc, getDoc } = await import('firebase/firestore');
 
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
+   const unsub = onAuthStateChanged(auth, async (user) => {
+  try {
+
+    if (!user) {
+      setAuthLoading(false);
+      router.push('/auth');
+      return;
+    }
+
+    setUserEmail(user.email || '');
+    setUserName(user.email?.split('@')[0] || '');
+
+    setRefCode(user.uid);
+
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+
+    setRefLink(`${origin}/auth?ref=${user.uid}`);
+
+    const snap = await getDoc(doc(db, 'users', user.uid));
+
+    if (snap.exists()) {
+      const data = snap.data();
+      setUserName(data.name || user.email?.split('@')[0]);
+      setRefEarnings(data.referralEarnings || 0);
+      setRefCount(Math.floor((data.referralEarnings || 0) / 10));
+    }
+
+  } catch (error) {
+    console.log("Auth error:", error);
+  }
+
   setAuthLoading(false);
-  router.push('/auth');
-  return;
-}
-
-        setUserEmail(user.email || '');
-        const rCode = user.uid;
-
-        setRefCode(rCode);
-        setRefLink(`${typeof window !== "undefined" ? window.location.origin : ""}/auth?ref=${rCode}`);
-
-        const snap = await getDoc(doc(db, 'users', user.uid));
-
-        if (snap.exists()) {
-          const data = snap.data();
-          setUserName(data.name || user.email?.split('@')[0]);
-          setRefEarnings(data.referralEarnings || 0);
-          setRefCount(Math.floor((data.referralEarnings || 0) / 10));
-        } else {
-          setUserName(user.email?.split('@')[0] || '');
-        }
-
-        setAuthLoading(false);
-      });
+});
 
       // share logic
       const lastShareDate = localStorage.getItem('demo_share_date');
@@ -130,8 +138,10 @@ export default function Dashboard() {
       checkTimer();
       const interval = setInterval(checkTimer, 1000);
 
-      return () => clearInterval(interval);
-    };
+      return () => {
+  if (unsub) unsub();
+  clearInterval(interval);
+};
 
     init();
   }, [router]);
